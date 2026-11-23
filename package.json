@@ -1,0 +1,16 @@
+{
+  "name": "price-sentinel",
+  "version": "1.0.0",
+  "description": "Checks a Finnhub price on a schedule and emails via Resend when it crosses a threshold. API keys live in a 1Claw vault.",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --env-file=.env src/index.js",
+    "once": "node --env-file=.env src/index.js --once",
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@1claw/sdk": "^0.63.6"
+  }
+}
