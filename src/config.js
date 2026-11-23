@@ -16,6 +16,11 @@ export function loadConfig(env = process.env) {
   const agentApiKey = required("ONECLAW_AGENT_API_KEY");
   if (agentApiKey && !agentApiKey.startsWith("ocv_")) errors.push('ONECLAW_AGENT_API_KEY must start with "ocv_"');
   const vaultId = mode === "vault" ? required("ONECLAW_VAULT_ID") : get("ONECLAW_VAULT_ID");
+  // Vault mode can auth with the ocv_ key alone; the execute endpoint URL needs the agent ID.
+  const agentId = mode === "intents" ? required("ONECLAW_AGENT_ID") : get("ONECLAW_AGENT_ID");
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (agentId && !uuid.test(agentId)) errors.push(`ONECLAW_AGENT_ID must be the agent's UUID from the ID column of \`1claw agent list\` (got "${agentId}"), or leave it empty in vault mode`);
+  if (vaultId && !uuid.test(vaultId)) errors.push(`ONECLAW_VAULT_ID must be the vault's UUID from \`1claw vault list\` (got "${vaultId}")`);
 
   const thresholdRaw = required("THRESHOLD");
   const threshold = Number(thresholdRaw);
@@ -30,7 +35,7 @@ export function loadConfig(env = process.env) {
 
   const cfg = {
     baseUrl,
-    agentId: required("ONECLAW_AGENT_ID"),
+    agentId,
     agentApiKey,
     vaultId,
     symbol: required("SYMBOL"),

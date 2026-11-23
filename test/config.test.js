@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { loadConfig } from "../src/config.js";
 
 const ok = {
-  ONECLAW_AGENT_ID: "a", ONECLAW_AGENT_API_KEY: "ocv_x", ONECLAW_VAULT_ID: "v",
+  ONECLAW_AGENT_ID: "00000000-0000-4000-8000-000000000001", ONECLAW_AGENT_API_KEY: "ocv_x", ONECLAW_VAULT_ID: "00000000-0000-4000-8000-000000000002",
   SYMBOL: "AAPL", THRESHOLD: "100", ALERT_TO: "a@b.c",
 };
 
@@ -20,7 +20,7 @@ test("valid env gets defaults and is frozen", () => {
 
 test("empty env lists all problems", () => {
   assert.throws(() => loadConfig({}), (e) =>
-    ["ONECLAW_AGENT_ID", "ONECLAW_AGENT_API_KEY", "ONECLAW_VAULT_ID", "SYMBOL", "THRESHOLD", "ALERT_TO"].every((k) => e.message.includes(k)));
+    ["ONECLAW_AGENT_API_KEY", "ONECLAW_VAULT_ID", "SYMBOL", "THRESHOLD", "ALERT_TO"].every((k) => e.message.includes(k)));
 });
 
 test("bad values are rejected", () => {
@@ -47,4 +47,12 @@ test("base URL must be https (localhost allowed)", () => {
   assert.throws(() => loadConfig({ ...ok, ONECLAW_BASE_URL: "http://api.1claw.co" }), /https/);
   assert.throws(() => loadConfig({ ...ok, ONECLAW_BASE_URL: "api.1claw.co" }), /https/);
   assert.equal(loadConfig({ ...ok, ONECLAW_BASE_URL: "http://localhost:8080" }).baseUrl, "http://localhost:8080");
+});
+
+test("agent id: optional in vault mode, required in intents mode, must be a UUID", () => {
+  const { ONECLAW_AGENT_ID, ...noId } = ok;
+  assert.equal(loadConfig(noId).agentId, undefined);
+  assert.throws(() => loadConfig({ ...noId, MODE: "intents" }), /ONECLAW_AGENT_ID is required/);
+  assert.throws(() => loadConfig({ ...ok, ONECLAW_AGENT_ID: "price-sentinel" }), /agent's UUID/);
+  assert.throws(() => loadConfig({ ...ok, ONECLAW_VAULT_ID: "default" }), /vault's UUID/);
 });

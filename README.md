@@ -110,7 +110,7 @@ The agent never handles the key in this mode. Guardrails limit each binding to o
    cp .env.example .env
    ```
 
-   Fill in `ONECLAW_AGENT_ID`, `ONECLAW_AGENT_API_KEY`, `ONECLAW_VAULT_ID`, `SYMBOL`, `THRESHOLD`, `DIRECTION`, and `ALERT_TO`. All variables are listed in the table below.
+   Fill in `ONECLAW_AGENT_API_KEY`, `ONECLAW_VAULT_ID` (a UUID, not the vault name), `ONECLAW_AGENT_ID` (a UUID; needed only for intents mode), `SYMBOL`, `THRESHOLD`, `DIRECTION`, and `ALERT_TO`. All variables are listed in the table below.
 
 7. **Run**
 
@@ -198,7 +198,7 @@ No restart is needed. The next check uses the new value in both modes: vault mod
 
 | Variable | Default | Notes |
 | --- | --- | --- |
-| `ONECLAW_AGENT_ID` | none | Required. Agent ID from `1claw agent list`. |
+| `ONECLAW_AGENT_ID` | none | Required in intents mode; optional in vault mode (1Claw identifies the agent from its key). The UUID from the ID column of `1claw agent list`, not the agent name. |
 | `ONECLAW_AGENT_API_KEY` | none | Required. Agent key, `ocv_...`. |
 | `ONECLAW_VAULT_ID` | none | Required in vault mode. Vault ID from `1claw vault list`. |
 | `ONECLAW_BASE_URL` | `https://api.1claw.co` | 1Claw API base URL. |
