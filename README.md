@@ -104,6 +104,13 @@ The agent never handles the key in this mode. Guardrails limit each binding to o
    1claw policy delete -v <vault-id> <policy-id>
    ```
 
+   Check your other vaults too. The agent may hold a policy outside this project (for example `examples/**` with read and write on the `default` vault). Delete it, then limit the agent to this vault:
+
+   ```sh
+   1claw policy list -v <other-vault-id>
+   1claw agent update <agent-id> --vault-ids <vault-id>
+   ```
+
 6. **Configure `.env`**
 
    ```sh
@@ -149,11 +156,16 @@ The agent never handles the key in this mode. Guardrails limit each binding to o
    1claw policy create -v <vault-id> --principal-type agent --principal-id <agent-id> --path "price-sentinel/*" --permissions use
    ```
 
-   Then set `MODE=intents` in `.env`.
+   Then set `MODE=intents` and `ONECLAW_AGENT_ID` in `.env`.
 
-   Note: with `use` and no `read` policy, the vault can inject the keys but the agent cannot read the plaintext. If you want intents-only, remove the read policy.
+   For intents-only access, delete the `read` policy from step 5. The vault still injects the keys, but the agent gets a `403` if it tries to read them. Vault mode stops working until you add `read` back.
 
-   `use` comes from 1Claw's binding docs (the CLI help only lists `read, write, delete`). If a binding call is denied, add `read` as well.
+   ```sh
+   1claw policy list -v <vault-id>
+   1claw policy delete -v <vault-id> <read-policy-id>
+   ```
+
+   The CLI help lists only `read, write, delete` for `--permissions`, but `use` is accepted.
 
    Check that each binding works, then inspect executions:
 
@@ -173,7 +185,7 @@ The agent never handles the key in this mode. Guardrails limit each binding to o
 - "Store this as `price-sentinel/resend-api-key`." (`put_secret`)
 - "Show the recent executions of the `finnhub` binding." (`list_executions`)
 
-The editor agent and price-sentinel are separate principals: each has its own key and policy, and both show up in the audit log.
+Give the editor its own 1Claw agent and policy instead of sharing price-sentinel's key. The policies above grant that key no write access, and in intents-only setups no read access either. `1claw agent list` shows which agents you have.
 
 ## Where 1Claw comes in
 
@@ -182,7 +194,7 @@ The editor agent and price-sentinel are separate principals: each has its own ke
 | No keys in `.env` or the repo | Vault |
 | Least privilege | Path-glob policies (`price-sentinel/*`) |
 | Rotation without a redeploy | Per-check fetch in vault mode |
-| Visibility | Audit log: `1claw audit list --vault <vault-id>` |
+| Visibility | Audit log: `1claw audit list` (add `--vault <vault-id>` for secret reads only; it leaves out binding executions) |
 | Agent never sees keys | Execution Intents (intents mode) |
 | Editor agent access | MCP server written by `npx @1claw/cli setup` |
 
@@ -192,7 +204,7 @@ The editor agent and price-sentinel are separate principals: each has its own ke
 1claw secret set price-sentinel/resend-api-key --value "<new key>" -v <vault-id>
 ```
 
-No restart is needed. The next check uses the new value in both modes: vault mode reads it fresh, and intents bindings point at the secret path (`--vault-ref`), not a copy. Every read appears in the 1Claw audit log.
+No restart is needed. The next check uses the new value in both modes: vault mode reads it fresh, and intents bindings point at the secret path (`--vault-ref`), not a copy. The 1Claw audit log records secret reads (vault mode) and binding executions (intents mode).
 
 ## Configuration
 
@@ -233,7 +245,7 @@ Uses `node:test`. No network access; everything is mocked.
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `403 forbidden` | The policy does not cover the secret path. Check `1claw policy list` and the `price-sentinel/*` policy. |
+| `403` reading a secret | No policy grants `read` on the secret path. Vault mode needs it. Check `1claw policy list -v <vault-id>`, or use `MODE=intents`. |
 | `unknown symbol` | Finnhub returned price `0`: the symbol is wrong or not covered by your Finnhub plan. Try a US ticker such as `AAPL`. |
 | Resend `403` or `422` | The recipient is not your Resend signup email, or the `ALERT_FROM` address is not on a verified domain. |
 | `denied` or `guardrail_violation` (intents mode) | Check the binding guardrails and confirm execution intents are enabled on the agent. |
